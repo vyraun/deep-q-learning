@@ -8,18 +8,15 @@ from deepq import DeepQ
 
 env = gym.make('CartPole-v0')
 
-epochs = 2000
-steps = 100000
+epochs = 100000
+steps = 25000
 explorationRate = 1
-minibatch_size = 128
+minibatch_size = 32
 
-deepQ = DeepQ(env)
-deepQ.initNetwork([8, 6, 4])
+deepQ = DeepQ(env, 4)
+deepQ.initNetwork([50, 50, 50, 50])
 
-stepCounter = 0
-startLearning = 500
-
-# env.monitor.start('/tmp/wingedsheep-cartpole-deepQ11')
+# env.monitor.start('/tmp/wingedsheep-cartpole-democraticDeepQ8')
 # number of reruns
 for epoch in xrange(epochs):
     observation = env.reset()
@@ -35,18 +32,11 @@ for epoch in xrange(epochs):
 
         # if done:
         #     reward = -50
-        
-        # if done:
-        #     deepQ.addMemoryFinal(observation, action, reward, newObservation, done)
-        # else:
         deepQ.addMemory(observation, action, reward, newObservation, done)
 
-        if stepCounter >= startLearning:
-            deepQ.learnOnMiniBatch(minibatch_size)
+        deepQ.learnOnMiniBatch(minibatch_size)
 
         observation = newObservation
-
-        stepCounter += 1
 
         if done:
             print "Episode ",epoch," finished after {} timesteps".format(t+1)
@@ -56,7 +46,5 @@ for epoch in xrange(epochs):
     explorationRate *= 0.995
     explorationRate = max (0.05, explorationRate)
 
-deepQ.printNetwork()
-
 # env.monitor.close()
-# gym.upload('/tmp/wingedsheep-cartpole-deepQ11', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
+# gym.upload('/tmp/wingedsheep-cartpole-democraticDeepQ8', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')

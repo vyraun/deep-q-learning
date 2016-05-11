@@ -15,16 +15,15 @@ import numpy as np
 from memory import Memory
 
 class DeepQ:
-    def __init__(self, environment):
-        self.input_size = len(environment.observation_space.high)
+    def __init__(self, environment, inputs):
+        self.input_size = inputs
         self.output_size = environment.action_space.n
-        self.memory = Memory(500000)
-        self.memoryFinal = Memory(500000)
-        self.discountFactor = 0.98
+        self.memory = Memory(10000)
+        self.discountFactor = 0.975
         self.learnStart = 36
    
     def initNetwork(self, hiddenLayers):
-        model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", 0.00025)
+        model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", 0.01)
         self.model = model
 
     def createModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
@@ -52,14 +51,6 @@ class DeepQ:
         optimizer = optimizers.RMSprop(lr=learningRate, rho=0.9, epsilon=1e-06)
         model.compile(loss="mse", optimizer=optimizer)
         return model
-
-    def printNetwork(self):
-        i = 0
-        for layer in self.model.layers:
-            weights = layer.get_weights()
-            print "layer ",i,": ",weights
-            i += 1
-
 
     def backupNetwork(self, model, backup):
         weightMatrix = []
@@ -92,7 +83,6 @@ class DeepQ:
         if isFinal:
             return reward
         else : 
-            # print self.discountFactor * self.getMaxQ(qValuesNewState)
             return reward + self.discountFactor * self.getMaxQ(qValuesNewState)
 
     # select the action with the highest Q value
@@ -133,12 +123,12 @@ class DeepQ:
     def addMemory(self, state, action, reward, newState, isFinal):
         self.memory.addMemory(state, action, reward, newState, isFinal)
 
-    def addMemoryFinal(self, state, action, reward, newState, isFinal):
-        self.memoryFinal.addMemory(state, action, reward, newState, isFinal)
+    def learnOnLastState(self):
+        if self.memory.getCurrentSize() >= 1:
+            return self.memory.getMemory(self.memory.getCurrentSize() - 1)
 
     def learnOnMiniBatch(self, miniBatchSize): 
         if self.memory.getCurrentSize() > self.learnStart :
-            # miniBatch = self.memoryFinal.getMiniBatch(miniBatchSize/2)
             miniBatch = self.memory.getMiniBatch(miniBatchSize)
             X_batch = np.empty((0,self.input_size), dtype = np.float64)
             Y_batch = np.empty((0,self.output_size), dtype = np.float64)
@@ -157,6 +147,6 @@ class DeepQ:
                 Y_sample = qValues.copy()
                 Y_sample[action] = targetValue
                 Y_batch = np.append(Y_batch, np.array([Y_sample]), axis=0)
-            self.model.fit(X_batch, Y_batch, batch_size = len(miniBatch), nb_epoch=1, verbose = 0)
+            self.model.fit(X_batch, Y_batch, batch_size = len(miniBatch), verbose = 0)
 
 

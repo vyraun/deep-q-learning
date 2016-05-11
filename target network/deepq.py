@@ -15,17 +15,20 @@ import numpy as np
 from memory import Memory
 
 class DeepQ:
-    def __init__(self, environment):
-        self.input_size = len(environment.observation_space.high)
-        self.output_size = environment.action_space.n
-        self.memory = Memory(500000)
-        self.memoryFinal = Memory(500000)
-        self.discountFactor = 0.98
-        self.learnStart = 36
+    def __init__(self, inputs, outputs, memorySize, discountFactor, learningRate, learnStart):
+        self.input_size = inputs
+        self.output_size = outputs
+        self.memory = Memory(memorySize)
+        self.discountFactor = discountFactor
+        self.learnStart = learnStart
+        self.learningRate = learningRate
    
-    def initNetwork(self, hiddenLayers):
-        model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", 0.00025)
+    def initNetworks(self, hiddenLayers):
+        model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
         self.model = model
+
+        targetModel = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
+        self.targetModel = targetModel
 
     def createModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
         model = Sequential()
@@ -63,28 +66,31 @@ class DeepQ:
 
     def backupNetwork(self, model, backup):
         weightMatrix = []
-        for layer in self.model.layers:
+        for layer in model.layers:
             weights = layer.get_weights()
             weightMatrix.append(weights)
         i = 0
-        for layer in self.secondBrain.layers:
+        for layer in backup.layers:
             weights = weightMatrix[i]
             layer.set_weights(weights)
             i += 1
+
+    def updateTargetNetwork(self):
+    	self.backupNetwork(self.model, self.targetModel)
 
     # predict Q values for all the actions
     def getQValues(self, state):
         predicted = self.model.predict(state.reshape(1,len(state)))
         return predicted[0]
 
-    def getMaxQ(self, qValues=None):
-        if (qValues is None):
-            qValues = self.getQValues(state)
+    def getTargetQValues(self, state):
+        predicted = self.targetModel.predict(state.reshape(1,len(state)))
+        return predicted[0]
+
+    def getMaxQ(self, qValues):
         return np.max(qValues)
 
-    def getMaxIndex(self, qValues=None):
-        if (qValues is None):
-            qValues = self.getQValues(state)
+    def getMaxIndex(self, qValues):
         return np.argmax(qValues)
 
     # calculate the target function
@@ -92,7 +98,6 @@ class DeepQ:
         if isFinal:
             return reward
         else : 
-            # print self.discountFactor * self.getMaxQ(qValuesNewState)
             return reward + self.discountFactor * self.getMaxQ(qValuesNewState)
 
     # select the action with the highest Q value
@@ -133,12 +138,13 @@ class DeepQ:
     def addMemory(self, state, action, reward, newState, isFinal):
         self.memory.addMemory(state, action, reward, newState, isFinal)
 
-    def addMemoryFinal(self, state, action, reward, newState, isFinal):
-        self.memoryFinal.addMemory(state, action, reward, newState, isFinal)
+    def learnOnLastState(self):
+        if self.memory.getCurrentSize() >= 1:
+            return self.memory.getMemory(self.memory.getCurrentSize() - 1)
 
-    def learnOnMiniBatch(self, miniBatchSize): 
+    def learnOnMiniBatch(self, miniBatchSize):
+
         if self.memory.getCurrentSize() > self.learnStart :
-            # miniBatch = self.memoryFinal.getMiniBatch(miniBatchSize/2)
             miniBatch = self.memory.getMiniBatch(miniBatchSize)
             X_batch = np.empty((0,self.input_size), dtype = np.float64)
             Y_batch = np.empty((0,self.output_size), dtype = np.float64)
@@ -150,13 +156,16 @@ class DeepQ:
                 newState = sample['newState']
 
                 qValues = self.getQValues(state)
-                qValuesNewState = self.getQValues(newState)
+                qValuesNewState = self.getTargetQValues(newState)
                 targetValue = self.calculateTarget(qValuesNewState, reward, isFinal)
 
-                X_batch = np.append(X_batch, np.array([state]), axis=0)
+                X_batch = np.append(X_batch, np.array([state.copy()]), axis=0)
                 Y_sample = qValues.copy()
                 Y_sample[action] = targetValue
                 Y_batch = np.append(Y_batch, np.array([Y_sample]), axis=0)
-            self.model.fit(X_batch, Y_batch, batch_size = len(miniBatch), nb_epoch=1, verbose = 0)
+                if isFinal:
+                    X_batch = np.append(X_batch, np.array([newState.copy()]), axis=0)
+                    Y_batch = np.append(Y_batch, np.array([[reward]*self.output_size]), axis=0)
+            self.model.fit(X_batch, Y_batch, batch_size = len(X_batch), verbose = 0)
 
 
