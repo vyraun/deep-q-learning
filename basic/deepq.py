@@ -19,7 +19,6 @@ class DeepQ:
         self.input_size = len(environment.observation_space.high)
         self.output_size = environment.action_space.n
         self.memory = Memory(500000)
-        self.memoryFinal = Memory(500000)
         self.discountFactor = 0.98
         self.learnStart = 36
    
@@ -133,12 +132,8 @@ class DeepQ:
     def addMemory(self, state, action, reward, newState, isFinal):
         self.memory.addMemory(state, action, reward, newState, isFinal)
 
-    def addMemoryFinal(self, state, action, reward, newState, isFinal):
-        self.memoryFinal.addMemory(state, action, reward, newState, isFinal)
-
     def learnOnMiniBatch(self, miniBatchSize): 
         if self.memory.getCurrentSize() > self.learnStart :
-            # miniBatch = self.memoryFinal.getMiniBatch(miniBatchSize/2)
             miniBatch = self.memory.getMiniBatch(miniBatchSize)
             X_batch = np.empty((0,self.input_size), dtype = np.float64)
             Y_batch = np.empty((0,self.output_size), dtype = np.float64)
@@ -157,4 +152,4 @@ class DeepQ:
                 Y_sample = qValues.copy()
                 Y_sample[action] = targetValue
                 Y_batch = np.append(Y_batch, np.array([Y_sample]), axis=0)
-            self.model.fit(X_batch, Y_batch, batch_size = 1, nb_epoch=1, verbose = 0)
+            self.model.fit(X_batch, Y_batch, batch_size = len(X_batch), nb_epoch=1, verbose = 0)

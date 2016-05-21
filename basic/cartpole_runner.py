@@ -26,7 +26,7 @@ for epoch in xrange(epochs):
     print explorationRate
     # number of timesteps
     for t in xrange(steps):
-        env.render()
+        # env.render()
         qValues = deepQ.getQValues(observation)
 
         action = deepQ.selectAction(qValues, explorationRate)

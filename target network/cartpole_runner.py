@@ -10,10 +10,10 @@ env = gym.make('CartPole-v0')
 
 epochs = 3000
 steps = 100000
-updateTargetNetwork = 1000
+updateTargetNetwork = 10000
 explorationRate = 1
-minibatch_size = 64
-learnStart = 64
+minibatch_size = 128
+learnStart = 128
 learningRate = 0.00025
 discountFactor = 0.99
 memorySize = 1000000
@@ -23,13 +23,13 @@ last100ScoresIndex = 0
 last100Filled = False
 
 deepQ = DeepQ(4, 2, memorySize, discountFactor, learningRate, learnStart)
-deepQ.initNetworks([24, 16, 12, 8])
 # deepQ.initNetworks([6])
 # deepQ.initNetworks([8, 5])
+deepQ.initNetworks([30,30,30])
 
 stepCounter = 0
 
-# env.monitor.start('/tmp/wingedsheep-cartpole-deepQLearning4')
+env.monitor.start('/tmp/wingedsheep-cartpole-deepQLearning5')
 # number of reruns
 for epoch in xrange(epochs):
     observation = env.reset()
@@ -43,16 +43,21 @@ for epoch in xrange(epochs):
 
         newObservation, reward, done, info = env.step(action)
 
-        # if (t >= 199):
-        #     done = True
-        #     reward = 200
+        if (t >= 199):
+            print "reached the end! :D"
+            done = True
+            reward = 200
 
-        # if done:
-        #     reward = -50
+        if done and t < 199:
+            print "decrease reward"
+            reward -= 200
         deepQ.addMemory(observation, action, reward, newObservation, done)
 
         if stepCounter >= learnStart:
-            deepQ.learnOnMiniBatch(minibatch_size)
+            if stepCounter <= updateTargetNetwork:
+                deepQ.learnOnMiniBatch(minibatch_size, False)
+            else :
+                deepQ.learnOnMiniBatch(minibatch_size, True)
 
         observation = newObservation
 
@@ -62,7 +67,6 @@ for epoch in xrange(epochs):
             if last100ScoresIndex >= 100:
                 last100Filled = True
                 last100ScoresIndex = 0
-            print last100Filled
             if not last100Filled:
                 print "Episode ",epoch," finished after {} timesteps".format(t+1)
             else :
@@ -80,5 +84,5 @@ for epoch in xrange(epochs):
 
 deepQ.printNetwork()
 
-# env.monitor.close()
-# gym.upload('/tmp/wingedsheep-cartpole-deepQLearning4', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
+env.monitor.close()
+gym.upload('/tmp/wingedsheep-cartpole-deepQLearning5', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
