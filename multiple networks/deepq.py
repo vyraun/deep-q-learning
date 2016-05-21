@@ -209,6 +209,6 @@ class DeepQ:
                 Y_sample = qValues.copy()
                 Y_sample[action] = targetValue
                 Y_batch = np.append(Y_batch, np.array([Y_sample]), axis=0)
-            self.models[modelNr].fit(X_batch, Y_batch, batch_size = len(miniBatch), verbose = 0)
+            self.models[modelNr].fit(X_batch, Y_batch, batch_size = 1, verbose = 0)
 
 

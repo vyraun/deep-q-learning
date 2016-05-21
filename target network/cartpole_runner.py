@@ -8,34 +8,44 @@ from deepq import DeepQ
 
 env = gym.make('CartPole-v0')
 
-epochs = 10000
+epochs = 3000
 steps = 100000
-updateTargetNetwork = 10000
+updateTargetNetwork = 1000
 explorationRate = 1
-minibatch_size = 32
-learnStart = 32
+minibatch_size = 64
+learnStart = 64
 learningRate = 0.00025
 discountFactor = 0.99
 memorySize = 1000000
 
+last100Scores = [0] * 100
+last100ScoresIndex = 0
+last100Filled = False
+
 deepQ = DeepQ(4, 2, memorySize, discountFactor, learningRate, learnStart)
 deepQ.initNetworks([24, 16, 12, 8])
+# deepQ.initNetworks([6])
+# deepQ.initNetworks([8, 5])
 
 stepCounter = 0
 
-# env.monitor.start('/tmp/wingedsheep-cartpole-democraticDeepQ8')
+# env.monitor.start('/tmp/wingedsheep-cartpole-deepQLearning4')
 # number of reruns
 for epoch in xrange(epochs):
     observation = env.reset()
     print explorationRate
     # number of timesteps
     for t in xrange(steps):
-        env.render()
+        # env.render()
         qValues = deepQ.getQValues(observation)
 
         action = deepQ.selectAction(qValues, explorationRate)
 
         newObservation, reward, done, info = env.step(action)
+
+        # if (t >= 199):
+        #     done = True
+        #     reward = 200
 
         # if done:
         #     reward = -50
@@ -47,7 +57,16 @@ for epoch in xrange(epochs):
         observation = newObservation
 
         if done:
-            print "Episode ",epoch," finished after {} timesteps".format(t+1)
+            last100Scores[last100ScoresIndex] = t
+            last100ScoresIndex += 1
+            if last100ScoresIndex >= 100:
+                last100Filled = True
+                last100ScoresIndex = 0
+            print last100Filled
+            if not last100Filled:
+                print "Episode ",epoch," finished after {} timesteps".format(t+1)
+            else :
+                print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
             break
 
         stepCounter += 1
@@ -62,4 +81,4 @@ for epoch in xrange(epochs):
 deepQ.printNetwork()
 
 # env.monitor.close()
-# gym.upload('/tmp/wingedsheep-cartpole-democraticDeepQ8', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
+# gym.upload('/tmp/wingedsheep-cartpole-deepQLearning4', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')

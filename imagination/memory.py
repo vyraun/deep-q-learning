@@ -24,6 +24,9 @@ class Memory:
     def getMemory(self, index): 
         return {'state': self.states[index],'action': self.actions[index], 'reward': self.rewards[index], 'newState': self.newStates[index], 'isFinal': self.finals[index]}
 
+    def getLastMemory(self):
+        return {'state': self.states[self.getCurrentSize() -1],'action': self.actions[self.getCurrentSize() -1], 'reward': self.rewards[self.getCurrentSize() -1], 'newState': self.newStates[self.getCurrentSize() -1], 'isFinal': self.finals[self.getCurrentSize() -1]}
+
     def addMemory(self, state, action, reward, newState, isFinal) :
         if (self.currentPosition >= self.size - 1) :
             self.currentPosition = 0
