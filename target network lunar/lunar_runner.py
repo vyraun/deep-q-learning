@@ -6,10 +6,11 @@ import numpy as np
 # import own classes
 from deepq import DeepQ
 
-env = gym.make('CartPole-v0')
+print(gym.envs.registry.all())
+env = gym.make('LunarLander-v1')
 
 epochs = 1000
-steps = 100000
+steps = 1000
 updateTargetNetwork = 10000
 explorationRate = 1
 minibatch_size = 128
@@ -22,35 +23,41 @@ last100Scores = [0] * 100
 last100ScoresIndex = 0
 last100Filled = False
 
-deepQ = DeepQ(4, 2, memorySize, discountFactor, learningRate, learnStart)
+renderPerXEpochs = 50
+shouldRender = False
+
+deepQ = DeepQ(len(env.observation_space.high), env.action_space.n, memorySize, discountFactor, learningRate, learnStart)
 # deepQ.initNetworks([6])
 # deepQ.initNetworks([8, 5])
 deepQ.initNetworks([30,30,30])
 
 stepCounter = 0
 
-env.monitor.start('/tmp/wingedsheep-cartpole-deepQLearning6')
+env.monitor.start('/tmp/wingedsheep-lunarlander-deepQLearning')
 # number of reruns
 for epoch in xrange(epochs):
     observation = env.reset()
     print explorationRate
     # number of timesteps
+    totalReward = 0
     for t in xrange(steps):
-        # env.render()
+        if epoch % renderPerXEpochs == 0 and shouldRender:
+            env.render()
         qValues = deepQ.getQValues(observation)
 
         action = deepQ.selectAction(qValues, explorationRate)
 
         newObservation, reward, done, info = env.step(action)
+        totalReward += reward
 
-        if (t >= 199):
-            print "reached the end! :D"
-            done = True
-            reward = 200
+        # if (t >= 199):
+        #     print "reached the end! :D"
+        #     done = True
+        #     reward = 200
 
-        if done and t < 199:
-            print "decrease reward"
-            reward -= 200
+        # if done and t < 199:
+            # print "decrease reward"
+            # reward -= 200
         deepQ.addMemory(observation, action, reward, newObservation, done)
 
         if stepCounter >= learnStart:
@@ -62,15 +69,15 @@ for epoch in xrange(epochs):
         observation = newObservation
 
         if done:
-            last100Scores[last100ScoresIndex] = t
+            last100Scores[last100ScoresIndex] = totalReward
             last100ScoresIndex += 1
             if last100ScoresIndex >= 100:
                 last100Filled = True
                 last100ScoresIndex = 0
             if not last100Filled:
-                print "Episode ",epoch," finished after {} timesteps".format(t+1)
+                print "Episode ",epoch," finished after {} timesteps".format(t+1)," with total reward",totalReward
             else :
-                print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
+                print "Episode ",epoch," finished after {} timesteps".format(t+1)," with total reward",totalReward," last 100 average: ",(sum(last100Scores)/len(last100Scores))
             break
 
         stepCounter += 1
@@ -85,4 +92,4 @@ for epoch in xrange(epochs):
 deepQ.printNetwork()
 
 env.monitor.close()
-gym.upload('/tmp/wingedsheep-cartpole-deepQLearning6', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
+gym.upload('/tmp/wingedsheep-lunarlander-deepQLearning', api_key='sk_GC4kfmRSQbyRvE55uTWMOw')
