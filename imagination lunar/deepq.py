@@ -17,25 +17,25 @@ import numpy as np
 from memory import Memory
 
 class DeepQ:
-    def __init__(self, inputs, outputs, memorySize, discountFactor, learningRate, learnStart):
-        self.input_size = inputs
-        self.output_size = outputs
+    def __init__(self, size_state, nr_actions, memorySize, discountFactor, learningRate, learnStart):
+        self.input_size = size_state
+        self.output_size = nr_actions
         self.memory = Memory(memorySize)
         self.discountFactor = discountFactor
         self.learnStart = learnStart
         self.learningRate = learningRate
    
     def initNetworks(self, hiddenLayers):
-        model = self.createRegularizedModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
+        model = self.createModel(self.input_size, self.output_size * , hiddenLayers, "relu", self.learningRate)
         self.model = model
 
-        targetModel = self.createRegularizedModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
+        targetModel = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
         self.targetModel = targetModel
 
     def createRegularizedModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
         bias = True
-        dropout = 0.2
-        regularizationFactor = 0
+        dropout = 0
+        regularizationFactor = 0.01
         model = Sequential()
         if len(hiddenLayers) == 0: 
             model.add(Dense(self.output_size, input_shape=(self.input_size,), init='lecun_uniform', bias=bias))

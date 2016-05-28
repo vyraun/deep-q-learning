@@ -19,8 +19,8 @@ epochs = 5000
 steps = 1000
 updateTargetNetwork = 10000
 explorationRate = 1
-minibatch_size = 36
-learnStart = 36
+minibatch_size = 1
+learnStart = 1
 learningRate = 0.00025
 discountFactor = 0.99
 memorySize = 10000000
@@ -35,11 +35,11 @@ shouldRender = True
 deepQ = DeepQ(len(env.observation_space.high), env.action_space.n, memorySize, discountFactor, learningRate, learnStart)
 # deepQ.initNetworks([6])
 # deepQ.initNetworks([8, 5])
-deepQ.initNetworks([50, 50, 50])
+deepQ.initNetworks([10, 10, 10])
 
 stepCounter = 0
 
-env.monitor.start('/tmp/wingedsheep-lunarlander-deepQLearning20')
+env.monitor.start('/tmp/wingedsheep-lunarlander-deepQLearning17')
 # number of reruns
 for epoch in xrange(epochs):
     observation = env.reset()
